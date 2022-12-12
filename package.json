@@ -40,7 +40,8 @@
     "format": [
       "esm"
     ],
-    "treeshake": true
+    "treeshake": true,
+    "splitting": false
   },
   "scripts": {
     "dev": "tsup --watch",
