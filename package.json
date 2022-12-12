@@ -47,7 +47,7 @@
     "build": "tsup --clean --dts",
     "typecheck": "tsc",
     "test": "jest --color --coverage",
-    "ci": "run-s typecheck build"
+    "ci": "run-p typecheck test build"
   },
   "dependencies": {
     "@npmcli/arborist": "^6.1.5",
