@@ -51,5 +51,5 @@ if (argv._[0] === 'generate') {
     packageJson.sceau = sceau
     await fs.writeJSON(packageJsonPath, packageJson, { spaces: 2 })
   }
-  console.log(JSON.stringify(sceau, null, Boolean(argv.pretty) ? 2 : 0))
+  console.log(JSON.stringify(sceau, null, Boolean(argv.compact) ? 0 : 2))
 }
