@@ -8,5 +8,5 @@ on:
 jobs:
   ci-cd:
     name: CI/CD
-    uses: 47ng/workflows/.github/workflows/node-ci-cd.yml@main
+    uses: 47ng/workflows/.github/workflows/pnpm-ci-cd.yml@main
     secrets: inherit
