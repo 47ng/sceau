@@ -46,7 +46,7 @@
     "dev": "tsup --watch",
     "build": "tsup --clean --dts",
     "typecheck": "tsc",
-    "test": "jest --color",
+    "test": "jest --color --coverage",
     "ci": "run-s typecheck build"
   },
   "dependencies": {
