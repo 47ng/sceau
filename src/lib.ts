@@ -185,10 +185,12 @@ export async function sign(sodium: Sodium, input: SignInput) {
     ignoreFiles,
     secretKey
   )
+  const $schema = V1_SCHEMA_URL
   const timestamp = new Date().toISOString()
   const signature = multipartSignature(
     sodium,
     secretKey,
+    sodium.from_string($schema),
     sodium.from_string(timestamp),
     sodium.from_string(sourceURL),
     sodium.from_string(buildURL),
@@ -196,7 +198,7 @@ export async function sign(sodium: Sodium, input: SignInput) {
   )
   sodium.memzero(secretKey)
   const sceau: Sceau = {
-    $schema: V1_SCHEMA_URL,
+    $schema,
     signature: sodium.to_hex(signature),
     publicKey,
     timestamp,
@@ -222,6 +224,7 @@ export async function verify(
       sodium,
       publicKey,
       sodium.from_hex(sceau.signature),
+      sodium.from_string(sceau.$schema),
       sodium.from_string(sceau.timestamp),
       sodium.from_string(sceau.sourceURL),
       sodium.from_string(sceau.buildURL),
