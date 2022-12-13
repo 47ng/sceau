@@ -55,22 +55,8 @@ jobs:
         run: pnpm install --ignore-scripts --frozen-lockfile
       - name: Build package
         run: pnpm build
-      - uses: docker://ghcr.io/codfish/semantic-release-action@sha256:16ab6c16b1bff6bebdbcc6cfc07dfafff49d23c6818490500b8edb3babfff29e
-        name: Semantic Release
-        id: semantic
-        with:
-          branches: |
-            [
-              'main',
-              {
-                name: 'beta',
-                prerelease: true
-              },
-              {
-                name: 'alpha',
-                prerelease: true
-              }
-            ]
+      - name: Semantic Release
+        run: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
