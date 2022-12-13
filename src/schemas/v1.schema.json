@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "signature": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{128}$"
+    },
+    "publicKey": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "timestamp": {
+      "type": "string"
+    },
+    "sourceURL": {
+      "type": "string",
+      "format": "uri"
+    },
+    "buildURL": {
+      "type": "string",
+      "format": "uri"
+    },
+    "manifest": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{128}$"
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "signature": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{128}$"
+          }
+        },
+        "required": ["path", "hash", "sizeBytes", "signature"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "$schema",
+    "signature",
+    "publicKey",
+    "timestamp",
+    "sourceURL",
+    "buildURL",
+    "manifest"
+  ],
+  "additionalProperties": false
+}

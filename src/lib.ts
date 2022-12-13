@@ -39,7 +39,13 @@ export const manifestEntrySchema = z.object({
 
 export type ManifestEntry = z.infer<typeof manifestEntrySchema>
 
+// --
+
+const V1_SCHEMA_URL =
+  'https://raw.githubusercontent.com/47ng/sceau/main/src/schemas/v1.schema.json'
+
 export const sceauSchema = z.object({
+  $schema: z.literal(V1_SCHEMA_URL),
   signature: signatureSchema,
   publicKey: hexStringSchema(32),
   timestamp: z.string().datetime({ precision: 3 }),
@@ -190,6 +196,7 @@ export async function sign(sodium: Sodium, input: SignInput) {
   )
   sodium.memzero(secretKey)
   const sceau: Sceau = {
+    $schema: V1_SCHEMA_URL,
     signature: sodium.to_hex(signature),
     publicKey,
     timestamp,

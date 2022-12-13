@@ -19,7 +19,7 @@ specifiers:
   ts-jest: ^29.0.3
   tsup: ^6.5.0
   typescript: ^4.9.4
-  zod: 3.20.0-beta.0
+  zod: 3.20.2
 
 dependencies:
   '@npmcli/arborist': 6.1.5
@@ -27,7 +27,7 @@ dependencies:
   libsodium-wrappers: 0.7.10
   minimist: 1.2.7
   npm-packlist: 7.0.4
-  zod: 3.20.0-beta.0
+  zod: 3.20.2
 
 devDependencies:
   '@swc/core': 1.3.22
@@ -4658,6 +4658,6 @@ packages:
     engines: {node: '>=10'}
     dev: true
 
-  /zod/3.20.0-beta.0:
-    resolution: {integrity: sha512-f3tzkrcUzmZi8Rsy0dS5BZJMahnMN1uR0a25du3xBH43kmVnSU6GBtuYSWu4aFPMh847GPUeoOoVARK5hj/rDw==}
+  /zod/3.20.2:
+    resolution: {integrity: sha512-1MzNQdAvO+54H+EaK5YpyEy0T+Ejo/7YLHS93G3RnYWh5gaotGHwGeN/ZO687qEDU2y4CdStQYXVHIgrUl5UVQ==}
     dev: false
