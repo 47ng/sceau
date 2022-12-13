@@ -1,10 +1,6 @@
 import { numberToUint32LE } from './codec'
 import type { Sodium } from './sodium'
 
-export function generateSignatureKeyPair(sodium: Sodium) {
-  return sodium.crypto_sign_keypair()
-}
-
 /**
  * Calculate a multipart detached signature of multiple elements.
  *

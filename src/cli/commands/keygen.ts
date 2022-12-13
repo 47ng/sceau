@@ -1,11 +1,10 @@
 import { initializeSodium } from '../../crypto/sodium'
+import { keygen } from '../../lib'
 import type { KeygenCommandArgs } from '../args'
 
 export async function keygenCommand(args: KeygenCommandArgs) {
   const sodium = await initializeSodium()
-  const keypair = args.seed
-    ? sodium.crypto_sign_seed_keypair(sodium.from_hex(args.seed), 'hex')
-    : sodium.crypto_sign_keypair('hex')
+  const keypair = keygen(sodium, args.seed)
   if (args.compact) {
     console.info(keypair.privateKey)
   } else {

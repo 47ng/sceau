@@ -11,6 +11,13 @@ import {
 } from './crypto/signature'
 import type { Sodium } from './crypto/sodium'
 
+export function keygen(sodium: Sodium, seed?: string) {
+  const { publicKey, privateKey } = seed
+    ? sodium.crypto_sign_seed_keypair(sodium.from_hex(seed), 'hex')
+    : sodium.crypto_sign_keypair('hex')
+  return { publicKey, privateKey }
+}
+
 export const hexStringSchema = (bytes: number) =>
   z
     .string()
@@ -148,7 +155,7 @@ async function verifyManifest(
   }
 }
 
-const sceauInputSchema = sceauSchema
+const signInputSchema = sceauSchema
   .pick({
     sourceURL: true,
     buildURL: true,
@@ -159,11 +166,11 @@ const sceauInputSchema = sceauSchema
     ignoreFiles: z.array(z.string()).default([]),
   })
 
-type SceauInput = z.infer<typeof sceauInputSchema>
+type SignInput = z.infer<typeof signInputSchema>
 
-export async function sign(sodium: Sodium, input: SceauInput) {
+export async function sign(sodium: Sodium, input: SignInput) {
   const { packageDir, sourceURL, buildURL, privateKey, ignoreFiles } =
-    sceauInputSchema.parse(input)
+    signInputSchema.parse(input)
   const secretKey = sodium.from_hex(privateKey)
   const publicKey = sodium.to_hex(secretKey.slice(32, 64))
   const manifest = await signManifest(

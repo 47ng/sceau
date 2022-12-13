@@ -159,6 +159,25 @@ you can specify its location (relative to the package directory):
 $ sceau verify --file build/signature.json
 ```
 
+### Programmatic usage
+
+Sceau can be imported as a library (ESM-only):
+
+```ts
+import { initializeSodium, keygen, sign, verify } from 'sceau'
+
+// todo: Add programmatic usage docs
+```
+
+## Cryptography
+
+Cryptography is provided by [libsodium](https://github.com/jedisct1/libsodium.js).
+
+- Hash: BLAKE2b, 64 byte output, no key, default parameters
+- Signature: Ed25519ph (SHA-512 pre-hash), with manifest header.
+
+See [signature.ts](./src/crypto/signature.ts) for more details.
+
 ## About the name
 
 _Sceau_ is French for _seal_ (the ones found on letters, not in oceans).
