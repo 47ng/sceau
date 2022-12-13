@@ -55,12 +55,6 @@ jobs:
         run: pnpm install --ignore-scripts --frozen-lockfile
       - name: Build package
         run: pnpm build
-      - name: Sign package
-        run: pnpm sceau sign
-        env:
-          SCEAU_BUILD_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
-          SCEAU_SOURCE_URL: https://github.com/${{github.repository}}/commit/${{ github.sha }}
-          SCEAU_PRIVATE_KEY: ${{ secrets.SCEAU_PRIVATE_KEY }}
       - uses: docker://ghcr.io/codfish/semantic-release-action@sha256:16ab6c16b1bff6bebdbcc6cfc07dfafff49d23c6818490500b8edb3babfff29e
         name: Semantic Release
         id: semantic
@@ -80,4 +74,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
+          SCEAU_BUILD_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+          SCEAU_SOURCE_URL: https://github.com/${{github.repository}}/tree/${{ github.sha }}
+          SCEAU_PRIVATE_KEY: ${{ secrets.SCEAU_PRIVATE_KEY }}
