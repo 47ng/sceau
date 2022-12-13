@@ -12,7 +12,12 @@ export async function verifyCommand(args: VerifyCommandArgs) {
     const sceauFilePath = path.resolve(packageDir, args.file)
     await fs.stat(sceauFilePath).catch(error => {
       if (error.code === 'ENOENT') {
-        throw new Error('This package is not signed')
+        const message = 'This package is not signed'
+        if (args.strict) {
+          throw new Error(chalk.red(message))
+        }
+        console.info(message)
+        process.exit(0)
       }
       throw error
     })

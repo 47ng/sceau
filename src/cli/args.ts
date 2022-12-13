@@ -34,6 +34,7 @@ const verifyCommandSchema = z.object({
   packageDir: z.string().optional(),
   publicKey: hexStringSchema(32).optional(),
   file: z.string().optional().default(SCEAU_FILE_NAME),
+  strict: z.boolean().optional().default(false),
 })
 
 export type VerifyCommandArgs = z.infer<typeof verifyCommandSchema>
@@ -92,6 +93,7 @@ ${chalk.green('##')} ${chalk.bold('sceau verify')}
       --packageDir [path]     Path to the package to process (default: \`cwd\`)
       --file [path]           Path to the sceau file (default: \`sceau.json\`)
       --publicKey [key]       env: SCEAU_PUBLIC_KEY  Signature public key to use for verification (defaults to using the embedded one)
+      --strict                Fail if package is not signed
   `)
     process.exit(1)
   }
