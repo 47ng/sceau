@@ -60,6 +60,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          SCEAU_BUILD_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
-          SCEAU_SOURCE_URL: https://github.com/${{github.repository}}/tree/${{ github.sha }}
           SCEAU_PRIVATE_KEY: ${{ secrets.SCEAU_PRIVATE_KEY }}
