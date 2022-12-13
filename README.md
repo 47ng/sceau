@@ -31,7 +31,7 @@ First off, you'll need a signature private key.
 
 You can generate one from the CLI:
 
-```shell
+```
 $ sceau keygen
 
 Run the following command in your terminal to use this private key:
@@ -56,19 +56,19 @@ and the associated public key.
 
 To sign a package, run the following command:
 
-```shell
+```
 $ sceau sign
 ```
 
 This will:
 
-1. Collect a list of files to be published (based on your `files` option in package.json and your .npmignore file)
+1. Collect a list of files to be published (based on the `files` option in package.json and the .npmignore file)
 2. Hash and sign each file into a manifest
 3. Inject some metadata, like:
 
 - The current time
-- A link to the sources (see [CI usage](#ci-usage))
-- A link to the build process (see [CI usage](#ci-usage))
+- A permalink to the sources _(see [CI usage](#ci-usage))_
+- A permalink to the build process _(see [CI usage](#ci-usage))_
 
 4. Sign the whole thing
 5. Store it in a `sceau.json` file next to package.json
@@ -79,9 +79,6 @@ Links to source and build process are injected to provide transparency and
 traceability to a package being built.
 
 The idea is that the signing step would occur in a public CI/CD context.
-
-Sceau will write to a file, but will also print to the standard output, so this
-signature process can be audited by third parties.
 
 You can specify the URLs to the sources and build process either via the command-line,
 or via environment variables:
@@ -94,14 +91,17 @@ or via environment variables:
 If those are not provided, sceau will still sign your package, but the URLs
 will be set to `unknown://local`.
 
+Sceau will write to a file, but will also print to the standard output, so this
+signature process can be audited by third parties.
+
 todo: Add documentation on GitHub Actions
 
 #### Setting up package.json
 
-Because sceau should run right before NPM packs your artifacts and publishes them,
+Because sceau should run right before NPM packs your artifacts to publish them,
 you should run the signature step in the `prepack` script:
 
-```json
+```jsonc
 {
   "files": [
     // ...
@@ -116,18 +116,57 @@ you should run the signature step in the `prepack` script:
 Note that it's also required to add `sceau.json` to the list of files, otherwise
 the signature would be left behind when your package is packed.
 
+#### Options
+
+`--packageDir` lets you specify a path to a pacakge to sign.
+By default, sceau will try to look for a package to sign at the current working
+directory.
+
+`--file` lets you choose the output file (defaults to `sceau.json`). It should
+be a path relative to the package directory (where package.json is located).
+
+Example:
+
+```
+$ sceau sign --packageDir packages/my-package --file build/signature.json
+```
+
+This will sign package `<cwd>/packages/my-package`, and store the output at
+`<cwd>/packages/my-package/build/signature.json`.
+
 ### Verifying
 
 You can verify a package signed with sceau using the following command:
 
-```shell
+```
 $ sceau verify --packageDir path/to/package
 ```
 
-todo: Add public key pinning docs
+#### Options
+
+You should provide the public key to verify a signature against, obtained from
+a trusted source (ideally one not under GitHub's or NPM's control, in case those
+were to be compromised).
+
+```
+$ sceau verify --publicKey 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+```
+
+If the package uses a non-standard `<packageDir>/sceau.json` signature file,
+you can specify its location (relative to the package directory):
+
+```
+$ sceau verify --file build/signature.json
+```
 
 ## About the name
 
 _Sceau_ is French for _seal_ (the ones found on letters, not in oceans).
 
 It's pronounced like _so_.
+
+## License
+
+[MIT](https://github.com/47ng/sceau/blob/master/LICENSE) - Made with ❤️ by [François Best](https://francoisbest.com)
+
+Using this package at work ? [Sponsor me](https://github.com/sponsors/franky47) to help with support and maintenance.
