@@ -6,7 +6,7 @@ import { hexStringSchema } from '../lib'
 const keygenCommandSchema = z.object({
   command: z.literal('keygen'),
   seed: hexStringSchema(32).optional(),
-  pub: z.boolean().optional().default(false),
+  compact: z.boolean().optional().default(false),
 })
 
 export type KeygenCommandArgs = z.infer<typeof keygenCommandSchema>
@@ -64,8 +64,8 @@ ${chalk.green('##')} ${chalk.bold('sceau keygen')}
   Generate a signature private key (Ed25519).
 
   Options:
-    --pub                   Show public key
     --seed [32 bytes hex]   Generate a deterministic private key from the given seed
+    --compact               Only output the private key value without description
 
 
 ${chalk.green('##')} ${chalk.bold('sceau sign')}

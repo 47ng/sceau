@@ -6,8 +6,14 @@ export async function keygenCommand(args: KeygenCommandArgs) {
   const keypair = args.seed
     ? sodium.crypto_sign_seed_keypair(sodium.from_hex(args.seed), 'hex')
     : sodium.crypto_sign_keypair('hex')
-  console.log(`SCEAU_PRIVATE_KEY="${keypair.privateKey}"`)
-  if (args.pub) {
-    console.log(`SCEAU_PUBLIC_KEY="${keypair.publicKey}"`)
+  if (args.compact) {
+    console.info(keypair.privateKey)
+  } else {
+    console.info(`Run the following command in your terminal to use this private key:
+
+export SCEAU_PRIVATE_KEY="${keypair.privateKey}"
+
+Associated public key:
+${keypair.publicKey}`)
   }
 }
