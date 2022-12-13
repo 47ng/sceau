@@ -186,7 +186,7 @@ Sceau [signs itself](.github/workflows/ci-cd.yml) when released.
 You can verify a sceau install (using itself too):
 
 ```
-sceau verify --strict --publicKey 9ed8c34e4e3f4cf2faed85c8e3457fdf5bcccfff15eacc57882b14dff89565b6
+sceau verify --strict --publicKey c30d5d28b88136c77168fb78bf117948127c4e22f987ab60cd083bbd6c7ac0c9
 ```
 
 We use semantic-release, which injects the NPM package version just
