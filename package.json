@@ -51,7 +51,7 @@
     "test": "jest --color --coverage",
     "ci": "run-p typecheck test build",
     "sceau": "node ./dist/cli.js",
-    "prepublishOnly": "node ./dist/cli.js sign"
+    "postversion": "node ./dist/cli.js sign"
   },
   "dependencies": {
     "@npmcli/arborist": "^6.1.5",
