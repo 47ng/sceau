@@ -1,9 +1,14 @@
 import Arborist from '@npmcli/arborist'
+import chalk from 'chalk'
 import fs from 'node:fs/promises'
+import path from 'node:path'
 import packlist from 'npm-packlist'
 import { z } from 'zod'
 import { numberToUint32LE } from './crypto/codec'
-import { multipartSignature } from './crypto/signature'
+import {
+  multipartSignature,
+  verifyMultipartSignature,
+} from './crypto/signature'
 import type { Sodium } from './crypto/sodium'
 
 export const hexStringSchema = (bytes: number) =>
@@ -38,7 +43,7 @@ export const sceauSchema = z.object({
 
 export type Sceau = z.infer<typeof sceauSchema>
 
-async function getManifestEntry(
+async function signManifestEntry(
   sodium: Sodium,
   packageDir: string,
   relativeFilePath: string,
@@ -51,7 +56,7 @@ async function getManifestEntry(
   const signature = multipartSignature(
     sodium,
     privateKey,
-    sodium.from_string(filePath),
+    sodium.from_string(relativeFilePath),
     hash,
     numberToUint32LE(sizeBytes)
   )
@@ -63,20 +68,84 @@ async function getManifestEntry(
   }
 }
 
-async function getManifest(
+async function verifyManifestEntry(
   sodium: Sodium,
   packageDir: string,
+  entry: ManifestEntry,
+  publicKey: Uint8Array
+) {
+  function error(reason: string): never {
+    throw new Error(
+      `${chalk.red.bold(entry.path)} Contents differ ${chalk.dim(
+        `(${reason})`
+      )}`
+    )
+  }
+  const filePath = path.resolve(packageDir, entry.path)
+  const contents = await fs.readFile(filePath)
+  const sizeBytes = contents.byteLength
+  if (sizeBytes !== entry.sizeBytes) {
+    error('mismatching file size')
+  }
+  const hash = sodium.crypto_generichash(64, contents, null)
+  if (!sodium.memcmp(hash, sodium.from_hex(entry.hash))) {
+    error('mismatching hash')
+  }
+  if (
+    !verifyMultipartSignature(
+      sodium,
+      publicKey,
+      sodium.from_hex(entry.signature),
+      sodium.from_string(entry.path),
+      hash,
+      numberToUint32LE(sizeBytes)
+    )
+  ) {
+    throw new Error(`${chalk.red.bold(entry.path)} Invalid signature`)
+  }
+  return true
+}
+
+// --
+
+async function signManifest(
+  sodium: Sodium,
+  packageDir: string,
+  ignoreFiles: string[],
   privateKey: Uint8Array
 ) {
   const arborist = new Arborist({ path: packageDir })
   const tree = await arborist.loadActual()
-  const files = await packlist(tree)
+  const files = (await packlist(tree)).filter(
+    file => !ignoreFiles.includes(file)
+  )
   files.sort()
   return Promise.all(
     files.map(filePath =>
-      getManifestEntry(sodium, packageDir, filePath, privateKey)
+      signManifestEntry(sodium, packageDir, filePath, privateKey)
     )
   )
+}
+
+async function verifyManifest(
+  sodium: Sodium,
+  packageDir: string,
+  publicKey: Uint8Array,
+  manifest: ManifestEntry[]
+) {
+  const result = await Promise.allSettled(
+    manifest.map(entry =>
+      verifyManifestEntry(sodium, packageDir, entry, publicKey)
+    )
+  )
+  const errors = result.filter(
+    p => p.status === 'rejected'
+  ) as PromiseRejectedResult[]
+  if (errors.length) {
+    throw new Error(
+      errors.map(e => e.reason?.message ?? String(e.reason)).join('\n')
+    )
+  }
 }
 
 const sceauInputSchema = sceauSchema
@@ -87,16 +156,22 @@ const sceauInputSchema = sceauSchema
   .extend({
     packageDir: z.string(),
     privateKey: hexStringSchema(64),
+    ignoreFiles: z.array(z.string()).default([]),
   })
 
 type SceauInput = z.infer<typeof sceauInputSchema>
 
-export async function generate(sodium: Sodium, input: SceauInput) {
-  const { packageDir, sourceURL, buildURL, privateKey } =
+export async function sign(sodium: Sodium, input: SceauInput) {
+  const { packageDir, sourceURL, buildURL, privateKey, ignoreFiles } =
     sceauInputSchema.parse(input)
   const secretKey = sodium.from_hex(privateKey)
   const publicKey = sodium.to_hex(secretKey.slice(32, 64))
-  const manifest = await getManifest(sodium, packageDir, secretKey)
+  const manifest = await signManifest(
+    sodium,
+    packageDir,
+    ignoreFiles,
+    secretKey
+  )
   const timestamp = new Date().toISOString()
   const signature = multipartSignature(
     sodium,
@@ -118,6 +193,28 @@ export async function generate(sodium: Sodium, input: SceauInput) {
   return sceau
 }
 
-export async function verify(sodium: Sodium, sceau: Sceau, packageDir: string) {
-  // todo: Implement me
+export async function verify(
+  sodium: Sodium,
+  sceau: Sceau,
+  packageDir: string,
+  publicKey: Uint8Array
+) {
+  if (new Date(sceau.timestamp).valueOf() > Date.now()) {
+    throw new Error('Signature timestamp is in the future')
+  }
+  await verifyManifest(sodium, packageDir, publicKey, sceau.manifest)
+  if (
+    !verifyMultipartSignature(
+      sodium,
+      publicKey,
+      sodium.from_hex(sceau.signature),
+      sodium.from_string(sceau.timestamp),
+      sodium.from_string(sceau.sourceURL),
+      sodium.from_string(sceau.buildURL),
+      ...sceau.manifest.map(entry => sodium.from_hex(entry.hash))
+    )
+  ) {
+    throw new Error('Invalid package signature')
+  }
+  return true
 }
