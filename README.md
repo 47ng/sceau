@@ -23,7 +23,7 @@ yarn add -D sceau
 npm install -D sceau
 ```
 
-## Usage
+## CLI usage
 
 First off, you'll need a signature private key.
 
@@ -66,6 +66,7 @@ This will:
 2. Hash and sign each file into a manifest
 3. Inject some metadata, like:
 
+- A [URL to the JSON schema](https://raw.githubusercontent.com/47ng/sceau/main/src/schemas/v1.schema.json) of the resulting file, serving as a version identifier
 - The current time
 - A permalink to the sources _(see [CI usage](#ci-usage))_
 - A permalink to the build process _(see [CI usage](#ci-usage))_
@@ -88,13 +89,14 @@ or via environment variables:
 | `--source`   | `SCEAU_SOURCE_URL`   | Permalink to the source code   |
 | `--build`    | `SCEAU_BUILD_URL`    | Permalink to the build process |
 
+> Note: those two URLs are automatically populated for you if sceau runs in a
+> GitHub Actions context. PRs for more CI contributions are welcome!
+
 If those are not provided, sceau will still sign your package, but the URLs
 will be set to `unknown://local`.
 
 Sceau will write to a file, but will also print to the standard output, so this
 signature process can be audited by third parties.
-
-todo: Add documentation on GitHub Actions
 
 #### Setting up package.json
 
@@ -159,7 +161,15 @@ you can specify its location (relative to the package directory):
 $ sceau verify --file build/signature.json
 ```
 
-### Programmatic usage
+By default, calling verify on an unsigned package will only print that fact
+and exit cleanly. If you expect a package to be signed, you can use strict
+verification, that will fail on unsigned packages:
+
+```
+$ sceau verify --strict
+```
+
+## Programmatic usage
 
 Sceau can be imported as a library (ESM-only):
 
@@ -168,6 +178,23 @@ import { initializeSodium, keygen, sign, verify } from 'sceau'
 
 // todo: Add programmatic usage docs
 ```
+
+## Examples
+
+Sceau [signs itself](.github/workflows/ci-cd.yml) when released.
+
+You can verify a sceau install (using itself too):
+
+```
+sceau verify --strict --publicKey 9ed8c34e4e3f4cf2faed85c8e3457fdf5bcccfff15eacc57882b14dff89565b6
+```
+
+We use semantic-release, which injects the NPM package version just
+before publishing. In order to sign the final package.json file,
+we run `sceau sign` as the `prepack` lifecycle hook.
+
+The private key is passed as an environment variable to the calling
+step (semantic-release).
 
 ## Cryptography
 
