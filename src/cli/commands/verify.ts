@@ -4,6 +4,7 @@ import path from 'node:path'
 import { initializeSodium } from '../../crypto/sodium'
 import { sceauSchema, verify } from '../../lib'
 import type { VerifyCommandArgs } from '../args'
+import { env } from '../env'
 
 export async function verifyCommand(args: VerifyCommandArgs) {
   const sodium = await initializeSodium()
@@ -25,16 +26,17 @@ export async function verifyCommand(args: VerifyCommandArgs) {
       encoding: 'utf8',
     })
     const sceau = sceauSchema.parse(JSON.parse(sceauFileContent))
-    if (args.publicKey && args.publicKey !== sceau.publicKey) {
+    const pinnedPublicKey = args.publicKey ?? env.SCEAU_PUBLIC_KEY
+    if (pinnedPublicKey && pinnedPublicKey !== sceau.publicKey) {
       console.error(`${chalk.red(
         'The package was signed using a different private key than the one you are expecting.'
       )}
 
-  Supplied public key: ${args.publicKey}
+  Supplied public key: ${pinnedPublicKey}
   Embedded public key: ${sceau.publicKey}`)
       process.exit(1)
     }
-    const publicKey = args.publicKey ?? sceau.publicKey
+    const publicKey = pinnedPublicKey ?? sceau.publicKey
     await verify(sodium, sceau, packageDir, sodium.from_hex(publicKey))
     console.info(`${chalk.green('✅ Signature verified')}
 Source:     ${sceau.sourceURL}
