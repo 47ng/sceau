@@ -171,12 +171,39 @@ $ sceau verify --strict
 
 ## Programmatic usage
 
-Sceau can be imported as a library (ESM-only):
+Sceau can be imported as a library (ESM only).
+
+You can access the commands using the same arguments as the CLI:
 
 ```ts
-import { initializeSodium, keygen, sign, verify } from 'sceau'
+import {
+  generateKeyPair,
+  signCommand,
+  verifyCommand,
+  SCEAU_FILE_NAME,
+} from 'sceau'
 
-// todo: Add programmatic usage docs
+// Random keypair
+const { publicKey, privateKey } = await generateKeyPair()
+
+// Seeded keypair
+const { publicKey, privateKey } = await generateKeyPair('baadf00d...')
+
+await signCommand({
+  file: SCEAU_FILE_NAME,
+  quiet: true,
+  privateKey: '...', // will default to SCEAU_PRIVATE_KEY env if unspecified
+  packageDir: 'packages/my-package',
+  build: 'https://url-to-build-process.example.com',
+  source: 'https://url-to-sources.example.com',
+})
+
+await verifyCommand({
+  file: SCEAU_FILE_NAME,
+  strict: true,
+  packageDir: 'packages/my-package',
+  publicKey: '...', // will default to SCEAU_PUBLIC_KEY env if unspecified
+})
 ```
 
 ## Examples

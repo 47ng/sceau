@@ -167,8 +167,22 @@ const signInputSchema = sceauSchema
     buildURL: true,
   })
   .extend({
+    timestamp: z.date(),
+
+    /**
+     * Absolute path to the package to sign
+     */
     packageDir: z.string(),
+
+    /**
+     * Ed25519 private key to use for signature (64 bytes hex encoded)
+     */
     privateKey: hexStringSchema(64),
+    /** A list of files to omit from the manifest
+     *
+     * Note that this should always include the sceau file itself,
+     * otherwise signature will be impossible (running in circles).
+     */
     ignoreFiles: z.array(z.string()).default([]),
   })
 
@@ -186,7 +200,7 @@ export async function sign(sodium: Sodium, input: SignInput) {
     secretKey
   )
   const $schema = V1_SCHEMA_URL
-  const timestamp = new Date().toISOString()
+  const timestamp = input.timestamp.toISOString()
   const signature = multipartSignature(
     sodium,
     secretKey,

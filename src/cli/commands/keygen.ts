@@ -2,9 +2,13 @@ import { initializeSodium } from '../../crypto/sodium'
 import { keygen } from '../../lib'
 import type { KeygenCommandArgs } from '../args'
 
-export async function keygenCommand(args: KeygenCommandArgs) {
+export async function generateKeyPair(seed: KeygenCommandArgs['seed']) {
   const sodium = await initializeSodium()
-  const keypair = keygen(sodium, args.seed)
+  return keygen(sodium, seed)
+}
+
+export async function keygenCommand(args: KeygenCommandArgs) {
+  const keypair = await generateKeyPair(args.seed)
   if (args.compact) {
     console.info(keypair.privateKey)
   } else {

@@ -17,6 +17,7 @@ export async function signCommand(args: SignCommandArgs) {
   const packageDir = args.packageDir ?? process.cwd()
   const sodium = await initializeSodium()
   const sceau = await sign(sodium, {
+    timestamp: new Date(),
     packageDir,
     privateKey,
     buildURL,

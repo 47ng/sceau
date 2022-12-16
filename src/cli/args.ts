@@ -1,6 +1,7 @@
 import chalk from 'chalk'
 import minimist from 'minimist'
 import { z } from 'zod'
+import { SCEAU_FILE_NAME } from '../constants'
 import { hexStringSchema } from '../lib'
 
 const keygenCommandSchema = z.object({
@@ -9,11 +10,12 @@ const keygenCommandSchema = z.object({
   compact: z.boolean().optional().default(false),
 })
 
-export type KeygenCommandArgs = z.infer<typeof keygenCommandSchema>
+export type KeygenCommandArgs = Omit<
+  z.infer<typeof keygenCommandSchema>,
+  'command'
+>
 
 // --
-
-export const SCEAU_FILE_NAME = 'sceau.json'
 
 const signCommandSchema = z.object({
   command: z.literal('sign'),
@@ -25,7 +27,7 @@ const signCommandSchema = z.object({
   quiet: z.boolean().optional().default(false),
 })
 
-export type SignCommandArgs = z.infer<typeof signCommandSchema>
+export type SignCommandArgs = Omit<z.infer<typeof signCommandSchema>, 'command'>
 
 // --
 
@@ -37,7 +39,10 @@ const verifyCommandSchema = z.object({
   strict: z.boolean().optional().default(false),
 })
 
-export type VerifyCommandArgs = z.infer<typeof verifyCommandSchema>
+export type VerifyCommandArgs = Omit<
+  z.infer<typeof verifyCommandSchema>,
+  'command'
+>
 
 // --
 
