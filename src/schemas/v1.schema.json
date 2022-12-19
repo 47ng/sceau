@@ -4,46 +4,57 @@
   "properties": {
     "$schema": {
       "type": "string",
-      "format": "uri"
+      "format": "uri",
+      "description": "JSON schema for this document, also used as a version indicator."
     },
     "signature": {
       "type": "string",
-      "pattern": "^[0-9a-f]{128}$"
+      "pattern": "^[0-9a-f]{128}$",
+      "description": "Ed25519ph signature\nSee https://github.com/47ng/sceau/blob/main/src/crypto/signature.ts"
     },
     "publicKey": {
       "type": "string",
-      "pattern": "^[0-9a-f]{64}$"
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "Ed25519 public key associated with the private key used to compute the signature."
     },
     "timestamp": {
-      "type": "string"
+      "type": "string",
+      "description": "ISO-8601 (UTC based, no offset) timestamp of the signature date & time."
     },
     "sourceURL": {
       "type": "string",
-      "format": "uri"
+      "format": "uri",
+      "description": "Permalink to the source code at the state it was when being signed."
     },
     "buildURL": {
       "type": "string",
-      "format": "uri"
+      "format": "uri",
+      "description": "Permalink to the public CI/CD run where this signature occurred."
     },
     "manifest": {
       "type": "array",
+      "description": "Each entry in the manifest represents an artifact file being published.",
       "items": {
         "type": "object",
         "properties": {
           "path": {
-            "type": "string"
+            "type": "string",
+            "description": "Relative file path (from the package root)"
           },
           "hash": {
             "type": "string",
-            "pattern": "^[0-9a-f]{128}$"
+            "pattern": "^[0-9a-f]{128}$",
+            "description": "BLAKE2b hash of the file contents (64 byte output, no key, default parameters, hex encoding)"
           },
           "sizeBytes": {
             "type": "integer",
-            "exclusiveMinimum": 0
+            "exclusiveMinimum": 0,
+            "description": "Size of the file in bytes"
           },
           "signature": {
             "type": "string",
-            "pattern": "^[0-9a-f]{128}$"
+            "pattern": "^[0-9a-f]{128}$",
+            "description": "Ed25519ph signature of the path, hash and size in bytes."
           }
         },
         "required": ["path", "hash", "sizeBytes", "signature"],
