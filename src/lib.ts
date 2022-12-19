@@ -18,6 +18,8 @@ export function keygen(sodium: Sodium, seed?: string) {
   return { publicKey, privateKey }
 }
 
+// Schemas --
+
 export const hexStringSchema = (bytes: number) =>
   z
     .string()
@@ -28,16 +30,20 @@ export const hexStringSchema = (bytes: number) =>
       } characters)`
     )
 
-const signatureSchema = hexStringSchema(64)
+export const signatureSchema = hexStringSchema(64)
 
-export const manifestEntrySchema = z.object({
-  path: z.string(),
-  hash: hexStringSchema(64),
-  sizeBytes: z.number().int().positive(),
-  signature: signatureSchema,
+const manifestEntrySchema = z.object({
+  path: z.string().describe('Relative file path (from the package root)'),
+  hash: hexStringSchema(64).describe(
+    'BLAKE2b hash of the file contents (64 byte output, no key, default parameters, hex encoding)'
+  ),
+  sizeBytes: z.number().int().positive().describe('Size of the file in bytes'),
+  signature: signatureSchema.describe(
+    'Ed25519ph signature of the path, hash and size in bytes.'
+  ),
 })
 
-export type ManifestEntry = z.infer<typeof manifestEntrySchema>
+type ManifestEntry = z.infer<typeof manifestEntrySchema>
 
 // --
 
@@ -45,16 +51,77 @@ const V1_SCHEMA_URL =
   'https://raw.githubusercontent.com/47ng/sceau/main/src/schemas/v1.schema.json'
 
 export const sceauSchema = z.object({
-  $schema: z.literal(V1_SCHEMA_URL),
-  signature: signatureSchema,
-  publicKey: hexStringSchema(32),
-  timestamp: z.string().datetime({ precision: 3 }),
-  sourceURL: z.string().url(),
-  buildURL: z.string().url(),
-  manifest: z.array(manifestEntrySchema),
+  $schema: z
+    .literal(V1_SCHEMA_URL)
+    .describe(
+      'JSON schema for this document, also used as a version indicator.'
+    ),
+  signature: signatureSchema.describe(
+    'Ed25519ph signature\nSee https://github.com/47ng/sceau/blob/main/src/crypto/signature.ts'
+  ),
+  publicKey: hexStringSchema(32).describe(
+    'Ed25519 public key associated with the private key used to compute the signature.'
+  ),
+  timestamp: z
+    .string()
+    .datetime({ precision: 3 })
+    .describe('ISO-8601 timestamp of the signature date & time.'),
+  sourceURL: z
+    .string()
+    .url()
+    .describe(
+      'Permalink to the source code at the state it was when being signed.'
+    ),
+  buildURL: z
+    .string()
+    .url()
+    .describe(
+      'Permalink to the public CI/CD run where this signature occurred.'
+    ),
+  manifest: z
+    .array(manifestEntrySchema)
+    .describe(
+      'Each entry in the manifest represents an artifact file being published.'
+    ),
 })
 
 export type Sceau = z.infer<typeof sceauSchema>
+
+// --
+
+type ManifestEntryVerificationSuccess = {
+  outcome: 'success'
+}
+
+type ManifestEntryVerificationFailure = {
+  outcome: 'failure'
+  message: string
+  mismatchOn: 'size' | 'hash' | 'signature'
+  entry: ManifestEntry
+}
+
+type ManifestEntryVerificationResult =
+  | ManifestEntryVerificationSuccess
+  | ManifestEntryVerificationFailure
+
+type SceauVerificationSuccess = {
+  outcome: 'success'
+  timestamp: string
+  sourceURL: string
+  buildURL: string
+}
+
+type SceauVerificationFailure = {
+  outcome: 'failure'
+  manifestErrors: ManifestEntryVerificationFailure[]
+  signatureVerified: boolean
+}
+
+type SceauVerificationResult =
+  | SceauVerificationSuccess
+  | SceauVerificationFailure
+
+// --
 
 async function signManifestEntry(
   sodium: Sodium,
@@ -86,23 +153,26 @@ async function verifyManifestEntry(
   packageDir: string,
   entry: ManifestEntry,
   publicKey: Uint8Array
-) {
-  function error(reason: string): never {
-    throw new Error(
-      `${chalk.red.bold(entry.path)} Contents differ ${chalk.dim(
-        `(${reason})`
-      )}`
-    )
-  }
+): Promise<ManifestEntryVerificationResult> {
   const filePath = path.resolve(packageDir, entry.path)
   const contents = await fs.readFile(filePath)
   const sizeBytes = contents.byteLength
   if (sizeBytes !== entry.sizeBytes) {
-    error('mismatching file size')
+    return {
+      outcome: 'failure',
+      mismatchOn: 'size',
+      message: `Contents differ ${chalk.dim('(mismatching file size)')}`,
+      entry,
+    }
   }
   const hash = sodium.crypto_generichash(64, contents, null)
   if (!sodium.memcmp(hash, sodium.from_hex(entry.hash))) {
-    error('mismatching hash')
+    return {
+      outcome: 'failure',
+      mismatchOn: 'hash',
+      message: `Contents differ ${chalk.dim('(mismatching hash)')}`,
+      entry,
+    }
   }
   if (
     !verifyMultipartSignature(
@@ -114,9 +184,16 @@ async function verifyManifestEntry(
       numberToUint32LE(sizeBytes)
     )
   ) {
-    throw new Error(`${chalk.red.bold(entry.path)} Invalid signature`)
+    return {
+      outcome: 'failure',
+      mismatchOn: 'signature',
+      message: 'Invalid signature',
+      entry,
+    }
   }
-  return true
+  return {
+    outcome: 'success',
+  }
 }
 
 // --
@@ -146,19 +223,14 @@ async function verifyManifest(
   publicKey: Uint8Array,
   manifest: ManifestEntry[]
 ) {
-  const result = await Promise.allSettled(
+  const results = await Promise.all(
     manifest.map(entry =>
       verifyManifestEntry(sodium, packageDir, entry, publicKey)
     )
   )
-  const errors = result.filter(
-    p => p.status === 'rejected'
-  ) as PromiseRejectedResult[]
-  if (errors.length) {
-    throw new Error(
-      errors.map(e => e.reason?.message ?? String(e.reason)).join('\n')
-    )
-  }
+  return results.filter(
+    result => result.outcome === 'failure'
+  ) as ManifestEntryVerificationFailure[]
 }
 
 const signInputSchema = sceauSchema
@@ -228,24 +300,37 @@ export async function verify(
   sceau: Sceau,
   packageDir: string,
   publicKey: Uint8Array
-) {
+): Promise<SceauVerificationResult> {
   if (new Date(sceau.timestamp).valueOf() > Date.now()) {
     throw new Error('Signature timestamp is in the future')
   }
-  await verifyManifest(sodium, packageDir, publicKey, sceau.manifest)
-  if (
-    !verifyMultipartSignature(
-      sodium,
-      publicKey,
-      sodium.from_hex(sceau.signature),
-      sodium.from_string(sceau.$schema),
-      sodium.from_string(sceau.timestamp),
-      sodium.from_string(sceau.sourceURL),
-      sodium.from_string(sceau.buildURL),
-      ...sceau.manifest.map(entry => sodium.from_hex(entry.hash))
-    )
-  ) {
-    throw new Error('Invalid package signature')
+  const manifestErrors = await verifyManifest(
+    sodium,
+    packageDir,
+    publicKey,
+    sceau.manifest
+  )
+  const signatureVerified = verifyMultipartSignature(
+    sodium,
+    publicKey,
+    sodium.from_hex(sceau.signature),
+    sodium.from_string(sceau.$schema),
+    sodium.from_string(sceau.timestamp),
+    sodium.from_string(sceau.sourceURL),
+    sodium.from_string(sceau.buildURL),
+    ...sceau.manifest.map(entry => sodium.from_hex(entry.hash))
+  )
+  if (manifestErrors.length > 0 || !signatureVerified) {
+    return {
+      outcome: 'failure',
+      manifestErrors,
+      signatureVerified,
+    }
   }
-  return true
+  return {
+    outcome: 'success',
+    timestamp: sceau.timestamp,
+    sourceURL: sceau.sourceURL,
+    buildURL: sceau.buildURL,
+  }
 }

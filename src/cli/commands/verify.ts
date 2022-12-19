@@ -37,11 +37,36 @@ export async function verifyCommand(args: VerifyCommandArgs) {
       process.exit(1)
     }
     const publicKey = pinnedPublicKey ?? sceau.publicKey
-    await verify(sodium, sceau, packageDir, sodium.from_hex(publicKey))
+    const result = await verify(
+      sodium,
+      sceau,
+      packageDir,
+      sodium.from_hex(publicKey)
+    )
+    if (result.outcome === 'failure') {
+      const padding = Math.max(
+        ...result.manifestErrors.map(e => e.entry.path.length)
+      )
+      throw new Error(
+        `Signature: ${
+          result.signatureVerified
+            ? chalk.yellow(
+                'verified (but the rest of the sceau did not verify, see below)'
+              )
+            : chalk.red('invalid')
+        }
+  ${result.manifestErrors
+    .map(
+      error =>
+        `${chalk.bold(error.entry.path).padEnd(padding)} ${error.message}`
+    )
+    .join('\n  ')}`
+      )
+    }
     console.info(`${chalk.green('✅ Signature verified')}
-Source:     ${sceau.sourceURL}
-Build:      ${sceau.buildURL}
-Signed on:  ${sceau.timestamp}`)
+Source:     ${result.sourceURL}
+Build:      ${result.buildURL}
+Signed on:  ${result.timestamp}`)
   } catch (error) {
     console.error(error instanceof Error ? error.message : error)
     process.exit(1)
