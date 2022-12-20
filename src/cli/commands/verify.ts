@@ -44,9 +44,7 @@ export async function verifyCommand(args: VerifyCommandArgs) {
       sodium.from_hex(publicKey)
     )
     if (result.outcome === 'failure') {
-      const padding = Math.max(
-        ...result.manifestErrors.map(e => e.entry.path.length)
-      )
+      const padding = Math.max(...result.manifestErrors.map(e => e.path.length))
       throw new Error(
         `Signature: ${
           result.signatureVerified
@@ -56,10 +54,7 @@ export async function verifyCommand(args: VerifyCommandArgs) {
             : chalk.red('invalid')
         }
   ${result.manifestErrors
-    .map(
-      error =>
-        `${chalk.bold(error.entry.path).padEnd(padding)} ${error.message}`
-    )
+    .map(error => `${chalk.bold(error.path).padEnd(padding)} ${error.message}`)
     .join('\n  ')}`
       )
     }

@@ -96,9 +96,27 @@ export type ManifestEntryVerificationSuccess = {
 export type ManifestEntryVerificationFailure = {
   outcome: 'failure'
   message: string
-  mismatchOn: 'size' | 'hash' | 'signature'
-  entry: ManifestEntry
-}
+  path: string
+} & (
+  | {
+      mismatchOn: 'presence'
+      fileExists: false
+    }
+  | {
+      mismatchOn: 'size'
+      expected: number
+      received: number
+    }
+  | {
+      mismatchOn: 'hash'
+      expected: string
+      received: string
+    }
+  | {
+      mismatchOn: 'signature'
+      expected: string
+    }
+)
 
 export type ManifestEntryVerificationResult =
   | ManifestEntryVerificationSuccess
@@ -155,14 +173,26 @@ async function verifyManifestEntry(
   publicKey: Uint8Array
 ): Promise<ManifestEntryVerificationResult> {
   const filePath = path.resolve(packageDir, entry.path)
+  const stat = await fs.stat(filePath)
+  if (!stat.isFile()) {
+    return {
+      outcome: 'failure',
+      mismatchOn: 'presence',
+      message: 'File not found',
+      fileExists: false,
+      path: entry.path,
+    }
+  }
   const contents = await fs.readFile(filePath)
   const sizeBytes = contents.byteLength
   if (sizeBytes !== entry.sizeBytes) {
     return {
       outcome: 'failure',
       mismatchOn: 'size',
+      expected: entry.sizeBytes,
+      received: sizeBytes,
       message: `Contents differ ${chalk.dim('(mismatching file size)')}`,
-      entry,
+      path: entry.path,
     }
   }
   const hash = sodium.crypto_generichash(64, contents, null)
@@ -171,7 +201,9 @@ async function verifyManifestEntry(
       outcome: 'failure',
       mismatchOn: 'hash',
       message: `Contents differ ${chalk.dim('(mismatching hash)')}`,
-      entry,
+      expected: entry.hash,
+      received: sodium.to_hex(hash),
+      path: entry.path,
     }
   }
   if (
@@ -188,7 +220,8 @@ async function verifyManifestEntry(
       outcome: 'failure',
       mismatchOn: 'signature',
       message: 'Invalid signature',
-      entry,
+      expected: entry.signature,
+      path: entry.path,
     }
   }
   return {
