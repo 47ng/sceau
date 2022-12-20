@@ -89,35 +89,35 @@ export type Sceau = z.infer<typeof sceauSchema>
 
 // --
 
-type ManifestEntryVerificationSuccess = {
+export type ManifestEntryVerificationSuccess = {
   outcome: 'success'
 }
 
-type ManifestEntryVerificationFailure = {
+export type ManifestEntryVerificationFailure = {
   outcome: 'failure'
   message: string
   mismatchOn: 'size' | 'hash' | 'signature'
   entry: ManifestEntry
 }
 
-type ManifestEntryVerificationResult =
+export type ManifestEntryVerificationResult =
   | ManifestEntryVerificationSuccess
   | ManifestEntryVerificationFailure
 
-type SceauVerificationSuccess = {
+export type SceauVerificationSuccess = {
   outcome: 'success'
   timestamp: string
   sourceURL: string
   buildURL: string
 }
 
-type SceauVerificationFailure = {
+export type SceauVerificationFailure = {
   outcome: 'failure'
   manifestErrors: ManifestEntryVerificationFailure[]
   signatureVerified: boolean
 }
 
-type SceauVerificationResult =
+export type SceauVerificationResult =
   | SceauVerificationSuccess
   | SceauVerificationFailure
 

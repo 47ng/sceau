@@ -7,4 +7,12 @@ export { verifyCommand } from './cli/commands/verify'
 export { SCEAU_FILE_NAME } from './constants'
 export { initializeSodium } from './crypto/sodium'
 export { keygen, sceauSchema, sign, verify } from './lib'
-export type { Sceau } from './lib'
+export type {
+  ManifestEntryVerificationFailure,
+  ManifestEntryVerificationResult,
+  ManifestEntryVerificationSuccess,
+  Sceau,
+  SceauVerificationFailure,
+  SceauVerificationResult,
+  SceauVerificationSuccess,
+} from './lib'
