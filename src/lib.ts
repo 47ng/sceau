@@ -234,13 +234,13 @@ async function verifyManifestEntry(
 async function signManifest(
   sodium: Sodium,
   packageDir: string,
-  ignoreFiles: string[],
+  ignorePatterns: RegExp[],
   privateKey: Uint8Array
 ) {
   const arborist = new Arborist({ path: packageDir })
   const tree = await arborist.loadActual()
   const files = (await packlist(tree)).filter(
-    file => !ignoreFiles.includes(file)
+    file => !ignorePatterns.some(pattern => pattern.test(file))
   )
   files.sort()
   return Promise.all(
@@ -266,46 +266,47 @@ async function verifyManifest(
   ) as ManifestEntryVerificationFailure[]
 }
 
-const signInputSchema = sceauSchema
-  .pick({
-    sourceURL: true,
-    buildURL: true,
-  })
-  .extend({
-    timestamp: z.date(),
+type SignInput = Pick<Sceau, 'sourceURL' | 'buildURL'> & {
+  timestamp: Date
+  /**
+   * Absolute path to the package to sign
+   */
+  packageDir: string
+  /**
+   * Ed25519 private key to use for signature (64 bytes hex encoded)
+   */
+  privateKey: string
+  /** A list of files to omit from the manifest
+   *
+   * Note that this should always include the sceau file itself,
+   * otherwise signature will be impossible (running in circles).
+   */
+  ignorePatterns: RegExp[]
+}
 
-    /**
-     * Absolute path to the package to sign
-     */
-    packageDir: z.string(),
-
-    /**
-     * Ed25519 private key to use for signature (64 bytes hex encoded)
-     */
-    privateKey: hexStringSchema(64),
-    /** A list of files to omit from the manifest
-     *
-     * Note that this should always include the sceau file itself,
-     * otherwise signature will be impossible (running in circles).
-     */
-    ignoreFiles: z.array(z.string()).default([]),
-  })
-
-type SignInput = z.infer<typeof signInputSchema>
-
-export async function sign(sodium: Sodium, input: SignInput) {
-  const { packageDir, sourceURL, buildURL, privateKey, ignoreFiles } =
-    signInputSchema.parse(input)
+export async function sign(
+  sodium: Sodium,
+  {
+    packageDir,
+    sourceURL,
+    buildURL,
+    privateKey,
+    ignorePatterns,
+    timestamp: timestampDate,
+  }: SignInput
+) {
+  // Verify private key format
+  hexStringSchema(64).parse(privateKey)
   const secretKey = sodium.from_hex(privateKey)
   const publicKey = sodium.to_hex(secretKey.slice(32, 64))
   const manifest = await signManifest(
     sodium,
     packageDir,
-    ignoreFiles,
+    ignorePatterns,
     secretKey
   )
   const $schema = V1_SCHEMA_URL
-  const timestamp = input.timestamp.toISOString()
+  const timestamp = timestampDate.toISOString()
   const signature = multipartSignature(
     sodium,
     secretKey,

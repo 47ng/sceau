@@ -22,7 +22,9 @@ export async function signCommand(args: SignCommandArgs) {
     privateKey,
     buildURL,
     sourceURL,
-    ignoreFiles: [args.file],
+    ignorePatterns: [`^${args.file}$`, ...args.ignore].map(
+      str => new RegExp(str)
+    ),
   })
   await fs.writeFile(args.file, JSON.stringify(sceau))
   if (!args.quiet) {

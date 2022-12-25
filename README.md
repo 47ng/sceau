@@ -136,6 +136,12 @@ $ sceau sign --packageDir packages/my-package --file build/signature.json
 This will sign package `<cwd>/packages/my-package`, and store the output at
 `<cwd>/packages/my-package/build/signature.json`.
 
+`--ignore` lets you specify RegExp patterns to match against file paths.
+Files matching those patterns won't be included in the manifest and therefore
+won't be part of the final signature.
+
+Note that the output file is always automatically included in those patterns.
+
 ### Verifying
 
 You can verify a package signed with sceau using the following command:

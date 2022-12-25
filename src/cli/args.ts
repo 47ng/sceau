@@ -25,6 +25,10 @@ const signCommandSchema = z.object({
   packageDir: z.string().optional(),
   file: z.string().optional().default(SCEAU_FILE_NAME),
   quiet: z.boolean().optional().default(false),
+  ignore: z
+    .union([z.string().transform(str => [str]), z.array(z.string()).optional()])
+    .optional()
+    .default([]),
 })
 
 export type SignCommandArgs = Omit<z.infer<typeof signCommandSchema>, 'command'>
@@ -87,6 +91,7 @@ ${chalk.green('##')} ${chalk.bold('sceau sign')}
   Options:
     --packageDir [path]     Path to the package to process (default: \`cwd\`)
     --file [path]           Store the output into the given JSON file, relative to packageDir (default: \`sceau.json\`)
+    --ignore [regex]        Ignore files matching the regular expression (can be passed multiple times)
     --quiet                 Don't print any output
 
 
